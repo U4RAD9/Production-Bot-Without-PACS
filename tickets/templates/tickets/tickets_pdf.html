@@ -3,63 +3,71 @@
 <head>
 	<title>Tickets List</title>
 	<style type="text/css">
-
 		table {
-			border:1px solid blue;
+			border: 1px solid blue;
+			border-collapse: collapse;
 			font-size: 12px;
+			width: 100%;
+			table-layout: fixed; /* prevents overflow */
 		}
-		td{
-			padding: 3px;
-		}
-		thead {
-			font-weight: bold;
-			font-size: 14px;
+		th, td {
+			border: 1px solid blue;
+			padding: 4px;
+			text-align: left;
+			vertical-align: top;
+			word-break: break-word;
+			white-space: normal;
 		}
 		.header {
 			background-color: gray;
+			color: white;
+			font-weight: bold;
 		}
 		.date {
 			font-size: 8px;
 			color: #022e33;
 		}
-
-
-
+		
 	</style>
-
 </head>
 <body>
 	<table>
 		<thead>
 			<tr>
-				<td class="header">USER</td>
-				<td class="header" colspan="2">TITLE</td>
-				<td class="header" width="18%">DEPARTMENT</td>
-				<td class="header">STATUS</td>
-				<td class="header">PRIORITY</td>
-				<td class="header" width="15%">CATEGORY</td>
-				<td class="header"> DATE</td>
+				<th class="header" width="14%">RAISED BY</th>
+				<th class="header" width="18%">TICKET</th>
+				<th class="header" width="15%">DEPARTMENT</th>
+				<th class="header" width="10%">STATUS</th>
+				<th class="header" width="10%">PRIORITY</th>
+				<th class="header" width="10%">CATEGORY</th>
+				<th class="header" width="10%">DATE</th>
+				<th class="header" width="13%">RESOLVED BY</th>
 			</tr>
 		</thead>
-       {% comment %} By Gautam Suri {% endcomment %}
 		<tbody>
 			{% for ticket in tickets %}
-			 <tr>
-			 	<td>{{ticket.user}}</td>
-			 	<td colspan="2">{{ticket.subject}}</td>
-			 	<td>{{ticket.department}}</td>
-			 	<td>{{ticket.status}}</td>
-			 	<td>{{ticket.priority}}</td>
-			 	<td>{{ticket.category}}</td>
-				
-			
-			 	<td class="date">{{ticket.date}}</td>
-			 </tr>
-
+			<tr>
+				<td>{{ ticket.user }}</td>
+				<td>{{ ticket.subject }}</td>
+				<td>{{ ticket.department }}</td>
+				<td>{{ ticket.status }}</td>
+				<td style="word-break: break-word; white-space: normal;colspan:1;">{{ ticket.priority }}</td>
+				<td>{{ ticket.category }}</td>
+				<td class="date">{{ ticket.date }}</td>
+				<td>
+					{% if ticket.assigned_to %}
+						{% if ticket.status == "Resolved" or ticket.status == "Closed" %}
+							<span>{{ ticket.assigned_to }}</span>
+						{% else %}
+							<span>Not Resolved Yet</span>
+						{% endif %}
+					{% else %}
+						<span>Not Assigned Yet</span>
+					{% endif %}
+				</td>
+			</tr>
 			{% endfor %}
-
 		</tbody>
-
 	</table>
 </body>
 </html>

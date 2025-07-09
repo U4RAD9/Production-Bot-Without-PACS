@@ -30,25 +30,87 @@ from django.contrib.auth.decorators import login_required
 from tickets.models import Tickets
 
 
+# @login_required
+# def render_pdf(request):
+# 	tickets,cat_none = tickets_filter(request);
+# 	data = [];
+# 	for ticket in tickets:
+# 		obj = {	"user":ticket.user.username,
+# 				"subject":ticket.subject,
+# 				"department":ticket.name,
+# 				"status":ticket.status,
+# 				"priority":ticket.priority,
+# 				"category":ticket.category,
+# 				"date":ticket.created,
+# 		}
+# 		data.append(obj);
+
+# 	tickets = {"tickets":data};
+
+# 	pdf = render_to_pdf('tickets/tickets_pdf.html',tickets);
+# 	return HttpResponse(pdf,content_type="application/pdf")
+
 @login_required
 def render_pdf(request):
-	tickets,cat_none = tickets_filter(request);
-	data = [];
+	tickets, cat_none = tickets_filter(request)
+	data = []
 	for ticket in tickets:
-		obj = {	"user":ticket.user.username,
-				"subject":ticket.subject,
-				"department":ticket.name,
-				"status":ticket.status,
-				"priority":ticket.priority,
-				"category":ticket.category,
-				"date":ticket.created,
+		assigned_to = None
+		if hasattr(ticket, 'taskassignment') and ticket.taskassignment:
+			assigned_to = (
+				ticket.taskassignment.assigned_to.get_full_name()
+				or ticket.taskassignment.assigned_to.username
+			)
+		
+		obj = {
+			"user": ticket.user.username,
+			"subject": ticket.subject,
+			"department": ticket.name,
+			"status": ticket.status,
+			"priority": ticket.priority,
+			"category": ticket.category,
+			"date": ticket.created,
+			"assigned_to": assigned_to,
 		}
-		data.append(obj);
+		data.append(obj)
 
-	tickets = {"tickets":data};
+	context = {"tickets": data}
+	pdf = render_to_pdf('tickets/tickets_pdf.html', context)
+	return HttpResponse(pdf, content_type="application/pdf")
 
-	pdf = render_to_pdf('tickets/tickets_pdf.html',tickets);
-	return HttpResponse(pdf,content_type="application/pdf")
+
+
+# @login_required
+# def render_pdf(request):
+#     tickets, cat_none = tickets_filter(request)
+#     data = []
+
+#     for ticket in tickets:
+#         # Default value
+#         resolved_by = "Not Resolved Yet"
+
+#         if ticket.status.lower() in ["resolved", "closed"]:
+#             try:
+#                 assigned_to = ticket.taskassignment.assigned_to
+#                 resolved_by = assigned_to.get_full_name() or assigned_to.username
+#             except:
+#                 resolved_by = "Not Resolved Yet"
+
+#         obj = {
+#             "user": ticket.user.username,
+#             "subject": ticket.subject,
+#             "department": ticket.name,
+#             "status": ticket.status,
+#             "priority": ticket.priority,
+#             "category": ticket.category.name if ticket.category else "None",
+#             "date": ticket.created,
+#             "resolved_by": resolved_by,
+#         }
+#         data.append(obj)
+
+#     pdf = render_to_pdf('tickets/tickets_pdf.html', {"tickets": data})
+#     return HttpResponse(pdf, content_type="application/pdf")
+
 
 @login_required
 def export_csv(request):

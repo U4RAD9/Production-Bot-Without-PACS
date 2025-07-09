@@ -35,16 +35,19 @@
 <table class="table table-bordered mt-2">
 	<thead class="bg-secondary">
 		<tr>
-			<th scope="col" class="text-white">PROFILE</th>
+			<th scope="col" class="text-white">RAISED BY</th>
 			<th scope="col" class="text-white">TITLE</th>
 			<th scope="col" class="text-white">DEPARTMENT</th>
 			<th scope="col" class="text-white">STATUS</th>
 			<th scope="col" class="text-white">PRIORITY</th>
 			<th scope="col" class="text-white">CATEGORY</th>
-			<th scope="col" class="text-white">ASSIGNED</th> <!-- ✅ NEW -->
+			{% comment %} <th scope="col" class="text-white">ASSIGNED</th> <!-- ✅ NEW --> {% endcomment %}
 
 			<th scope="col" class="text-white">Opening Date</th>
+			<th scope="col" class="text-white">RESOLVED BY</th>
 
+		</tr>
+		</thead>
 
 
 			<tbody>
@@ -119,18 +122,25 @@
 				<td>{{ticket.category.name}}</td>
 
 				<!-- Assigned Column -->
-<td>
-	{% if ticket.taskassignment %}
-	  {{ ticket.taskassignment.assigned_to.get_full_name|default:ticket.taskassignment.assigned_to.username }}
-	  {% if ticket.status == "Resolved" %}
-		<span class="badge badge-light text-success ml-1">(Resolved)</span>
-	  {% endif %}
-	{% else %}
-	  <span class="text-muted">Not Assigned</span>
-	{% endif %}
-  </td>
+
   
 				<td>{{ticket.created}}</td>
+				<td>
+					{% if ticket.taskassignment %}
+					  {% comment %} {{ ticket.taskassignment.assigned_to.get_full_name|default:ticket.taskassignment.assigned_to.username }} {% endcomment %}
+					  {% if ticket.status == "Resolved" or ticket.status == "Closed" %}
+						{% comment %} <span class="badge badge-light text-success ml-1">(Resolved)</span> {% endcomment %}
+						{% comment %} {{ ticket.taskassignment.assigned_to.get_full_name|default:ticket.taskassignment.assigned_to.username }} {% endcomment %}
+						<span class="text-muted">{{ ticket.taskassignment.assigned_to.get_full_name|default:ticket.taskassignment.assigned_to.username }}
+						</span>
+						{% else %}
+						<span class="text-muted">Not Resolved Yet</span>					 
+						 {% endif %}
+					{% else %}
+					  <span class="text-muted">Not Assigned Yet</span>
+					{% endif %}
+
+				  </td>
 			</tr>
 		{% endfor %}
 	</tbody>
