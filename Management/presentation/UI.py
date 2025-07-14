@@ -66,11 +66,11 @@ def user_login(request):
                 return redirect('TaskManagement')  
             else:
                 error_message = 'Invalid username or password.'
-                return render(request, 'Login.html', {'error_message': error_message})
+                return render(request, 'Homepage.html', {'error_message': error_message})
         
     else:
         form = LoginForm()  
-    return render(request, 'Login.html', {'form': form})
+    return render(request, 'Homepage.html', {'form': form})
 
 
 
@@ -392,3 +392,33 @@ Please review and make changes to your ticket accordingly.
             messages.warning(request, f"Failed to send revert email: {str(e)}")
 
     return redirect('TaskManagement')  
+
+
+# tickets/views.py
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from datetime import date
+
+
+
+def todays_tickets_pdf(request):
+    today = date.today()
+    tickets = Tickets.objects.filter(created__date=today)
+
+    context = {'tickets': tickets}
+    response = HttpResponse(content_type='application/pdf')
+    # response['Content-Disposition'] = f'attachment; filename="tickets_{today}.pdf"'
+    response['Content-Disposition'] = f'inline; filename="tickets_{today}.pdf"'
+
+    template = get_template('tickets_pdf.html')  # ✅ CORRECT
+
+
+    html = template.render(context)
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=500)
+    return response

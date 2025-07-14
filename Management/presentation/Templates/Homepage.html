@@ -105,7 +105,7 @@
 <body>
   <div class="container">
     <h1>Task Management System</h1>
-    <div class="row justify-content-center">
+    {% comment %} <div class="row justify-content-center">
       <div class="col-md-8">
         <div class="card mb-3">
           <div class="card-body text-center">
@@ -124,9 +124,36 @@
           </div>
         </div>
         {% endcomment %}
-      </div>
+      {% comment %} </div>
     </div>
+  </div> {% endcomment %} 
+
+  <div class="card mb-3">
+  <div class="card-body text-center">
+    <h5 class="card-title">Login</h5>
+
+    
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+      {% if error_message %}
+        <div class="alert alert-danger mt-2" role="alert">
+          {{ error_message }}
+        </div>
+      {% endif %}
+
+      <div class="form-group text-left">
+        <label for="id_UserName">Username:</label>
+        <input type="text" class="form-control" id="id_UserName" name="UserName" required>
+      </div>
+      <div class="form-group text-left">
+        <label for="id_Password">Password:</label>
+        <input type="password" class="form-control" id="id_Password" name="Password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
+    </form>
   </div>
+</div>
+
 
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>

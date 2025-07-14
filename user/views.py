@@ -243,7 +243,7 @@ def technic_dashboard(request):
         return redirect('error')  # Optional: restrict to technicians only
 
     # Get assigned tickets
-    assigned_tasks = TaskAssignment.objects.filter(assigned_to=request.user).select_related('ticket')
+    assigned_tasks = TaskAssignment.objects.filter(assigned_to=request.user).select_related('ticket').order_by('-ticket__created')  
 
     return render(request, 'tickets/technic_dashboard.html',{
         'assigned_tasks': assigned_tasks,

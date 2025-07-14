@@ -20,5 +20,5 @@
    >> http://127.0.0.1:8000
 
 # HelpDeskManagement
-The above is the description for the Ticketing system created by Rohan for U4rad Technologies 
+This version of the Ticketing system is created by Gautam Suri for U4rad Technologies.
 

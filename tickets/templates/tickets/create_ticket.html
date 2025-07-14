@@ -3,31 +3,105 @@
 
 {% block content %}
 <div class="d-flex justify-content-center">
-	<div class="card m-2 p-3 w-50">
-<form method="POST" novalidate="true" enctype="multipart/form-data">
-	{% csrf_token %}
-	<label for="name"> Department</label><span class="text-danger">*</span>
-	{{new_form.name|as_crispy_field}}
+  <div class="card m-2 p-3 w-50">
+    <form method="POST" novalidate="true" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="name"> Department</label><span class="text-danger">*</span>
+      {{ new_form.name|as_crispy_field }}
 
-	<label for="subject"> Subject </label><span class="text-danger">*</span>
-	{{new_form.subject|as_crispy_field}}
-    
-    <label for="category"> Category </label><span class="text-danger">*</span>
-	{{new_form.category|as_crispy_field}}
+      <label for="subject"> Subject </label><span class="text-danger">*</span>
+      {{ new_form.subject|as_crispy_field }}
+      
+      <label for="category"> Category </label><span class="text-danger">*</span>
+      {{ new_form.category|as_crispy_field }}
 
+      <label for="description"> Description  </label><span class="text-danger">*</span>
+      {{ new_form.description|as_crispy_field }}
 
-	<label for="description"> Description  </label><span class="text-danger">*</span>
-	{{new_form.description|as_crispy_field}}
+      <label for="priority"> Priority </label>
+      {{ new_form.priority|as_crispy_field }}
 
-	<label for="priority"> Priority </label>
-	{{new_form.priority|as_crispy_field}}
+	  <label for="attachment">Attachment</label>
+<small class="form-text text-muted">
+  📎 You can also copy-paste screenshots or files directly into this area.
+</small>
+<input type="file" name="attachment" id="id_attachment" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" class="form-control" />
 
-	<label for="attachment"> Attachment </label>
-	{{new_form.attachment|as_crispy_field}}
-
-	<input type="submit" name="submit" value="Create" class="btn btn-success">
-</form>
+<!-- Preview Area -->
+<div id="preview-container" class="mt-2">
+  <div id="file-preview" class="d-none">
+    <div id="preview-output"></div>
+    <button type="button" class="btn btn-sm btn-danger mt-2 mb-3" id="remove-preview">Remove</button>
+  </div>
 </div>
+
+
+
+
+    <input type="submit" name="submit" value="Create" class="btn btn-success">
+    </form>
+  </div>
 </div>
+<script>
+  const fileInput = document.getElementById("id_attachment");
+  const previewOutput = document.getElementById("preview-output");
+  const previewContainer = document.getElementById("file-preview");
+  const removeBtn = document.getElementById("remove-preview");
+
+  // Show preview for uploaded or pasted file
+  function showPreview(file) {
+    previewOutput.innerHTML = "";
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.maxWidth = "100%";
+        img.className = "img-thumbnail";
+        previewOutput.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const icon = document.createElement("p");
+      icon.innerHTML = `<strong>📄 ${file.name}</strong>`;
+      previewOutput.appendChild(icon);
+    }
+
+    previewContainer.classList.remove("d-none");
+  }
+
+  // File selected
+  fileInput.addEventListener("change", function () {
+    if (this.files && this.files.length > 0) {
+      showPreview(this.files[0]);
+    }
+  });
+
+  // Support for paste
+  document.addEventListener("paste", function (event) {
+    const items = event.clipboardData.items;
+    for (let item of items) {
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        showPreview(file);
+        break;
+      }
+    }
+  });
+
+  // Remove preview
+  removeBtn.addEventListener("click", function () {
+    fileInput.value = "";
+    previewOutput.innerHTML = "";
+    previewContainer.classList.add("d-none");
+  });
+</script>
+
+
 
 {% endblock %}

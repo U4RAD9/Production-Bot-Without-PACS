@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tickets List</title>
+    <style type="text/css">
+        table {
+            border: 1px solid blue;
+            border-collapse: collapse;
+            font-size: 12px;
+            width: 100%;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid blue;
+            padding: 4px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .header {
+            background-color: gray;
+            color: white;
+            font-weight: bold;
+        }
+        .date {
+            font-size: 10px;
+            color: #022e33;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th class="header" width="16%">RAISED BY</th>
+                <th class="header" width="20%">TICKET</th>
+                {% comment %} <th class="header" width="15%">DEPARTMENT</th> {% endcomment %}
+                <th class="header" width="11%">STATUS</th>
+                <th class="header" width="13%">PRIORITY</th>
+                <th class="header" width="16%">CATEGORY</th>
+                <th class="header" width="10%">CREATED AT</th>
+                <th class="header" width="14%">RESOLVED BY</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.user.get_full_name|default:ticket.user.username }}</td>
+                <td>{{ ticket.subject }}</td>
+                {% comment %} <td>{{ ticket.department}}</td> {% endcomment %}
+                <td>{{ ticket.status|default:"-" }}</td>
+                <td>{{ ticket.priority|default:"-" }}</td>
+                <td>
+                    {% if ticket.category %}
+                        {{ ticket.category.name|default:ticket.category }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="date">{{ ticket.created}}</td>
+                <td>
+                    {% if ticket.taskassignment %}
+                        {% if ticket.status == "Resolved" or ticket.status == "Closed" %}
+                            {{ ticket.taskassignment.assigned_to.get_full_name|default:ticket.taskassignment.assigned_to.username }}
+                        {% else %}
+                            Not Resolved Yet
+                        {% endif %}
+                    {% else %}
+                        Not Assigned Yet
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
