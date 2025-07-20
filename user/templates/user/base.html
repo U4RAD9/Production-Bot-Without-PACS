@@ -19,7 +19,7 @@
 
 
     <title>{% block title %}{% endblock %}</title>
-    <style>
+    {% comment %} <style>
       #preview-area img {
   border: 1px solid #ccc;
 }
@@ -31,7 +31,33 @@
   }
 </style>
 
+</style> {% endcomment %}
+
+<style>
+  #drop-area {
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    transition: background-color 0.2s;
+  }
+
+#drop-area.dragover {
+  background-color: #f0f8ff;
+  border-color: #007bff !important;
+}
+
+
+  #preview-output img {
+    max-width: 100%;
+    max-height: 200px;
+  }
 </style>
+
+
+
     <script src="https://kit.fontawesome.com/0c56c59398.js" crossorigin="anonymous"></script>
   </head>
   <body>
