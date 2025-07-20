@@ -25,6 +25,11 @@ from Management.presentation.ViewModels.assignforms import TaskAssignForm
 from Management.DAL.Entities import Users  
 from django.conf import settings
 
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from datetime import date
 
 def landing_page(request):
     return render(request, 'landing.html')
@@ -396,11 +401,6 @@ Please review and make changes to your ticket accordingly.
 
 # tickets/views.py
 
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from datetime import date
 
 
 

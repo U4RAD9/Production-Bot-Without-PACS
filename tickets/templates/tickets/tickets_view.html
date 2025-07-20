@@ -53,32 +53,9 @@
 			<tbody>
 		{% for ticket in tickets  %} 
 			<tr>
-				<!- Profile -->
-				<td>
-					<div style="display: inline-flex;">
-						<a href="{% url 'user-detail-view' id=ticket.user.id %}">
-							{% comment %} <img src="{{ticket.user.profile.photo.url}}" alt="profile"
-							width="50" height="50"
-							class="border border-primary rounded-circle mr-3"> {% endcomment %}
+			
+				<td>{{ ticket.user.get_full_name|default:ticket.user.username }}</td>
 
-							{% if user.profile.photo %}
-							<img src="{{ user.profile.photo.url }}"
-								 class="rounded-circle shadow-sm border border-light object-fit-cover"
-								 alt="Profile"
-								 style="width: 20px; height: 20px;">
-						  {% else %}
-							<i class="fas fa-user-circle text-secondary"
-							   style="font-size: 40px;"></i>
-						  {% endif %}
-						</a>
-						<div>
-							<a href="{% url 'user-detail-view' id=ticket.user.id %}">
-								<h5 style="color: #0849AA;">{{ticket.user.username}}</h5>
-							</a>
-							<p style="font-size: 0.8em;color: #7EA6E0;">{{ticket.user.date_joined}}</p>
-						</div>
-					</div>
-				</td>
 
 				<td>
 					<a href="{% url 'ticket-detail' id=ticket.id %}">
