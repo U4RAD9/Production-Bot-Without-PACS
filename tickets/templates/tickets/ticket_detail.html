@@ -97,7 +97,7 @@
 					style="font-size: 0.5em;" 
 				>{{ticket.name}}</span>
 			</h5>
-			<p style="font-size: 0.8em;color: #7EA6E0;">{{ticket.updated}}</p>
+			<p style="font-size: 0.8em;color: #7EA6E0;">{{ticket.created}}</p>
 		</div>
 	</div>
 
@@ -128,7 +128,7 @@
 
 		<p style="text-align: justify;font-size: 1.3em;
 		color: #470070;
-		">{{ticket.description}}</p>
+		">{{ ticket.description|linebreaksbr|safe }}</p>
 
 		<div style="display: inline-flex;">
 
