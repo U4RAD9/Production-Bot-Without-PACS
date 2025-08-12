@@ -72,7 +72,19 @@
       {% endfor %}
     {% endif %}
 
+    
+
     <div class="create-button-container">
+
+       <form method="get" action="{% url 'export-csv-with-dates' %}" class="form-inline mr-2">
+    <label class="mr-2 mb-0">Start:</label>
+    <input type="date" name="start_date" class="form-control mr-2">
+
+    <label class="mr-2 mb-0">End:</label>
+    <input type="date" name="end_date" class="form-control mr-2">
+    
+    <button type="submit" class="btn btn-success">Export CSV</button>
+  </form>
       <a href="{% url 'todays-tickets-pdf' %}" class="btn btn-danger mr-2">Get Today's Tickets PDF</a>
 
       <a href="{% url 'Dashboard'  %}" class="btn btn-primary">Log Out</a>
