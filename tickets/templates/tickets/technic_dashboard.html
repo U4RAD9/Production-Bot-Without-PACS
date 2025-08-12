@@ -211,14 +211,48 @@
                   <span class="badge badge-secondary">Closed</span>
               
                 {% else %}
-                  <form method="post" action="{% url 'resolve-ticket' task.ticket.id %}"
-                        onsubmit="return confirm('Are you sure you want to mark this as resolved?')">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-success mb-1">Resolve</button>
-                  </form>
-              
+                   <button class="btn btn-sm btn-success mb-1" data-toggle="modal" data-target="#resolveModal{{ task.ticket.id }}">
+    Resolve
+  </button>
                   <button class="btn btn-sm btn-warning" data-toggle="modal" data-target="#revertModal{{ task.ticket.id }}">Revert</button>
+               
               
+                     <!-- Resolve Modal -->
+  <div class="modal fade" id="resolveModal{{ task.ticket.id }}" tabindex="-1" aria-labelledby="resolveLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form method="post" action="{% url 'resolve-ticket' task.ticket.id %}">
+        {% csrf_token %}
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Resolve Ticket #{{ task.ticket.id }}</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="resolve_reason">Reason for Resolving:</label>
+              <select name="resolve_reason" class="form-control" required>
+                <option value="">-- Select Reason --</option>
+                <option value="Code Changes">Code Changes</option>
+                <option value="Training Issue">Training Issue</option>
+                <option value="Network Issue">Network Issue</option>
+                <option value="Service Request">Service Request</option>
+                <option value="New Requirement">New Requirement</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Additional Notes (optional):</label>
+              <textarea name="additional_notes" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Mark as Resolved</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+                  
                   <!-- Revert Modal -->
                   <div class="modal fade" id="revertModal{{ task.ticket.id }}" tabindex="-1" aria-labelledby="revertLabel" aria-hidden="true">
                     <div class="modal-dialog">
@@ -229,7 +263,7 @@
                             <h5 class="modal-title">Revert Ticket #{{ task.ticket.id }}</h5>
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                           </div>
-                          <div class="modal-body">
+                            <div class="modal-body">
                             <div class="form-group">
                               <label for="reason">Reason for reverting:</label>
                               <textarea name="reason" class="form-control" rows="4" required></textarea>

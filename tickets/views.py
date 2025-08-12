@@ -114,22 +114,42 @@ def render_pdf(request):
 
 @login_required
 def export_csv(request):
-	response = HttpResponse(content_type='text/csv');
-	response['Content-Disposition'] ='attachment; filename = ticket-list-for-'+ str(datetime.date.today())+'.csv';
-	writer = csv.writer(response);
-	writer.writerow(['User','Title','Department','Status','Priority','Category','Date']);
-	tickets,cat_none=tickets_filter(request);
-	for ticket in tickets:
-		writer.writerow([
-			ticket.user.username,
-			ticket.subject,
-			ticket.name,
-			ticket.status,
-			ticket.priority,
-			ticket.category,
-			ticket.created,
-		])
-	return response;
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        'attachment; filename=ticket-list-for-' + str(datetime.date.today()) + '.csv'
+    )
+
+    writer = csv.writer(response)
+    
+    # Added new columns: Description, Resolved Reason, Resolved By
+    writer.writerow([
+        'Raised By', 
+        'Title', 
+        'Department', 
+        'Status', 
+        'Priority', 
+        'Category', 
+        'Date', 
+        'Description'
+
+    ])
+
+    tickets, cat_none = tickets_filter(request)
+
+    for ticket in tickets:
+        writer.writerow([
+            ticket.user.username,
+            ticket.subject,
+            ticket.name,
+            ticket.status,
+            ticket.priority,
+            ticket.category,
+            ticket.created,
+            ticket.description if hasattr(ticket, 'description') else ''
+           
+        ])
+
+    return response
 
 
 def ticket_detail_pdf(request,id):
@@ -934,3 +954,73 @@ HelpDesk System
             messages.info(request, f'Ticket #{ticket.id} is already closed.')
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+
+
+
+
+import csv
+import datetime
+from datetime import timedelta
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.dateparse import parse_date
+
+def export_csv_with_dates(request):
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    start_date = parse_date(start_date_str) if start_date_str else None
+    end_date = parse_date(end_date_str) if end_date_str else None
+
+    tickets = Tickets.objects.all()
+
+    if start_date:
+        tickets = tickets.filter(created__date__gte=start_date)
+    if end_date:
+        tickets = tickets.filter(created__date__lte=end_date)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename=ticket-list-{datetime.date.today()}.csv'
+    )
+
+    writer = csv.writer(response)
+    writer.writerow([
+		'ID',
+    'RAISED BY',
+    'TICKET',
+    'DESCRIPTION',
+    'STATUS',
+    'PRIORITY',
+    'CATEGORY',
+    'CREATED AT',
+    'RESOLVED BY',
+    'RESOLVING REASON'
+])
+
+
+    for ticket in tickets:
+        resolved_by = (
+            ticket.taskassignment.assigned_to.get_full_name()
+            if hasattr(ticket, 'taskassignment') and ticket.taskassignment.assigned_to
+            and (ticket.status == "Resolved" or ticket.status == "Closed")
+            else "Not Resolved Yet"
+        )
+
+        writer.writerow([
+            ticket.id,
+            ticket.user.get_full_name() or ticket.user.username,
+            ticket.subject,
+			ticket.description if hasattr(ticket, 'description') else '',
+            ticket.status or "-",
+            ticket.priority or "-",
+            ticket.category.name if ticket.category else "-",
+			(ticket.created + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"),
+
+            resolved_by if resolved_by else "Not Resolved Yet",
+			ticket.resolve_reason if ticket.resolve_reason else "Not Resolved Yet"
+        ])
+
+    return response

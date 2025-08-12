@@ -33,6 +33,8 @@ class Tickets(models.Model):
 	priority = models.CharField(max_length=100,choices= SET_PRIORITY,default = 'not_important');
 	created = models.DateTimeField(auto_now_add =True);
 	updated = models.DateTimeField(auto_now = True);
+
+	resolve_reason = models.CharField(max_length=255, blank=True, null=True)  
 	
 	def __str__(self):
 		return self.name;
