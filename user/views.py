@@ -320,37 +320,43 @@ def revert_ticket_from_technician(request, ticket_id):
 #             messages.error(request, "Please enter a reason to revert.")
 #     return redirect('technic-dashboard')
 
-
-
 @login_required
 @csrf_exempt
 def resolve_ticket(request, ticket_id):
     ticket = get_object_or_404(Tickets, id=ticket_id)
  
     if request.method == 'POST' and ticket.status != 'Closed':
-        ticket.status = 'Resolved'  
-        # resolved_time = localtime(ticket.resolved_at).strftime('%Y-%m-%d %H:%M')
+        # Combine resolve reason + notes
+        reason = request.POST.get('resolve_reason', '').strip()
+        notes = request.POST.get('additional_notes', '').strip()
+
+        if reason == 'Other':
+            full_reason = notes or 'No reason provided'
+        else:
+            full_reason = f"{reason} - {notes}" if notes else reason
+
+        # Save reason if your model has this field
+        if hasattr(ticket, 'resolve_reason'):
+            ticket.resolve_reason = full_reason
+
+        ticket.status = 'Resolved'
         ticket.save()
 
         management_emails = list(Users.objects.values_list('UserName', flat=True))
 
         ticket_url = request.build_absolute_uri(f"/Management/tickets/{ticket.id}/")
         login_url = request.build_absolute_uri(f"/Management/user/login/")
-		
-
 
         try:
             send_mail(
                 subject=f"Ticket #{ticket.id} Marked as Resolved",
                 message=(
                     f"{request.user.username} has marked ticket #{ticket.id} as resolved.\n\n"
+                    f"Resolving Reason: {full_reason}\n"
                     f"Subject: {ticket.subject}\n"
                     f"Description: {ticket.description}\n"
-					# f"Resolved At: {resolved_time}\n"
-
-                    # f"Resolved At: {ticket.resolved_at.strftime('%Y-%m-%d %H:%M')}\n"
-                    f"You can check using the system:"
-				    f"Link: {ticket_url}"
+                    f"You can check using the system:\n"
+                    f"Link: {ticket_url}"
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=management_emails,
@@ -359,7 +365,6 @@ def resolve_ticket(request, ticket_id):
         except Exception as e:
             messages.error(request, f"Failed to send email to management: {str(e)}")
 
-        # Send mail to ticket creator
         if ticket.user and ticket.user.email:
             try:
                 send_mail(
@@ -367,10 +372,10 @@ def resolve_ticket(request, ticket_id):
                     message=(
                         f"Hi {ticket.user.username},\n\n"
                         f"Your support ticket has been marked as resolved by {request.user.username}.\n"
+                        f"Resolving Reason: {full_reason}\n"
                         f"You may review the resolution and close the ticket if you're satisfied.\n\n"
                         f"Subject: {ticket.subject}\n"
-                        # f"Resolved At: {ticket.resolved_at.strftime('%Y-%m-%d %H:%M')}\n"
-						f"Kindly check it using the system:"
+                        f"Kindly check it using the system:\n"
                         f"Link to Ticket: {login_url}"
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
