@@ -15,7 +15,11 @@ class TaskAssignment(models.Model):
         (10, '10 minutes'), (15, '15 minutes'), (30, '30 minutes'),
         (60, '1 hour'), (240, '4 hours'), (1440, '1 day')
     ])
-    assigned_at = models.DateTimeField(auto_now_add=True)
+    # assigned_at = models.DateTimeField(auto_now_add=True)
+
+    assigned_att = models.DateTimeField(null=True, blank=True)
+    reassigned_at = models.DateTimeField(null=True, blank=True)
+
 
     def __str__(self):
         return f"#{self.ticket.id} to {self.assigned_to}"

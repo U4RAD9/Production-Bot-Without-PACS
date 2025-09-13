@@ -29,6 +29,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from tickets.models import Tickets
 
+import csv
+import datetime
+from datetime import timedelta
+from django.http import HttpResponse
+from django.utils.dateparse import parse_date
 
 # @login_required
 # def render_pdf(request):
@@ -112,7 +117,6 @@ def render_pdf(request):
 #     return HttpResponse(pdf, content_type="application/pdf")
 
 
-@login_required
 def export_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
@@ -120,8 +124,7 @@ def export_csv(request):
     )
 
     writer = csv.writer(response)
-    
-    # Added new columns: Description, Resolved Reason, Resolved By
+
     writer.writerow([
         'Raised By', 
         'Title', 
@@ -129,24 +132,53 @@ def export_csv(request):
         'Status', 
         'Priority', 
         'Category', 
-        'Date', 
-        'Description'
-
+        'Created At', 
+        'Description',
+        'Assigned At',
+        'Reassigned At',
+        'Resolved At',
+		'Resolving Reason'
     ])
 
     tickets, cat_none = tickets_filter(request)
 
     for ticket in tickets:
+        # Resolved Time
+        resolved_time = (
+            (ticket.resolved_at + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M")
+            if ticket.resolved_at else "Not Resolved Yet"
+        )
+
+        # Assigned and Reassigned Time
+        if hasattr(ticket, 'taskassignment'):
+            if ticket.taskassignment.assigned_att:
+                assigned_att_dt = ticket.taskassignment.assigned_att + timedelta(hours=5, minutes=30)
+                assigned_att = assigned_att_dt.strftime("%Y-%m-%d %H:%M")
+            else:
+                assigned_att = "Not Assigned"
+
+            if ticket.taskassignment.reassigned_at:
+                reassigned_at_dt = ticket.taskassignment.reassigned_at + timedelta(hours=5, minutes=30)
+                reassigned_at = reassigned_at_dt.strftime("%Y-%m-%d %H:%M")
+            else:
+                reassigned_at = "Never Reassigned"
+        else:
+            assigned_att = "Not Assigned"
+            reassigned_at = "Never Reassigned"
+
         writer.writerow([
             ticket.user.username,
             ticket.subject,
             ticket.name,
             ticket.status,
             ticket.priority,
-            ticket.category,
-            ticket.created,
-            ticket.description if hasattr(ticket, 'description') else ''
-           
+            ticket.category.name if ticket.category else "-",
+            (ticket.created + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"),
+            ticket.description if hasattr(ticket, 'description') else '',
+            assigned_att,
+            reassigned_at,
+            resolved_time,
+			ticket.resolve_reason if ticket.resolve_reason else 'Not Resolved Yet'
         ])
 
     return response
@@ -956,17 +988,7 @@ HelpDesk System
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
-
-
-
-
-import csv
-import datetime
-from datetime import timedelta
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
-from django.utils.dateparse import parse_date
-
+ 
 def export_csv_with_dates(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
@@ -988,39 +1010,68 @@ def export_csv_with_dates(request):
 
     writer = csv.writer(response)
     writer.writerow([
-		'ID',
-    'RAISED BY',
-    'TICKET',
-    'DESCRIPTION',
-    'STATUS',
-    'PRIORITY',
-    'CATEGORY',
-    'CREATED AT',
-    'RESOLVED BY',
-    'RESOLVING REASON'
-])
-
+        'ID',
+        'RAISED BY',
+        'TICKET',
+        'DESCRIPTION',
+        'STATUS',
+        'PRIORITY',
+        'CATEGORY',
+        'CREATED AT',
+        'ASSIGNED AT',
+        'REASSIGNED AT',
+        'RESOLVED BY',
+        'RESOLVING REASON',
+		'RESOLVED AT'
+    ])
 
     for ticket in tickets:
+        # Resolved by
         resolved_by = (
             ticket.taskassignment.assigned_to.get_full_name()
             if hasattr(ticket, 'taskassignment') and ticket.taskassignment.assigned_to
             and (ticket.status == "Resolved" or ticket.status == "Closed")
             else "Not Resolved Yet"
         )
+		
+        resolved_time = (
+    		(ticket.resolved_at + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M")
+    		if ticket.resolved_at else "Not Resolved Yet"
+		)
 
+
+        # Assigned and reassigned times
+        if hasattr(ticket, 'taskassignment'):
+            if ticket.taskassignment.assigned_att:
+                assigned_att_dt = ticket.taskassignment.assigned_att + timedelta(hours=5, minutes=30)
+                assigned_att = assigned_att_dt.strftime("%Y-%m-%d %H:%M")
+            else:
+                assigned_att = "Not Assigned"
+
+            if ticket.taskassignment.reassigned_at:
+                reassigned_at_dt = ticket.taskassignment.reassigned_at + timedelta(hours=5, minutes=30)
+                reassigned_at = reassigned_at_dt.strftime("%Y-%m-%d %H:%M")
+            else:
+                reassigned_at = "Never Reassigned"
+        else:
+            assigned_att = "Not Assigned"
+            reassigned_at = "Never Reassigned"
+
+        # Write row
         writer.writerow([
             ticket.id,
             ticket.user.get_full_name() or ticket.user.username,
             ticket.subject,
-			ticket.description if hasattr(ticket, 'description') else '',
+            ticket.description if hasattr(ticket, 'description') else '',
             ticket.status or "-",
             ticket.priority or "-",
             ticket.category.name if ticket.category else "-",
-			(ticket.created + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"),
-
-            resolved_by if resolved_by else "Not Resolved Yet",
-			ticket.resolve_reason if ticket.resolve_reason else "Not Resolved Yet"
+            (ticket.created + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"),
+            assigned_att,
+            reassigned_at,
+            resolved_by,
+            ticket.resolve_reason if ticket.resolve_reason else "Not Resolved Yet",
+			resolved_time
         ])
 
     return response
