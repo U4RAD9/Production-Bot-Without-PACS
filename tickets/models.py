@@ -35,6 +35,8 @@ class Tickets(models.Model):
 	updated = models.DateTimeField(auto_now = True);
 
 	resolve_reason = models.CharField(max_length=255, blank=True, null=True)  
+
+	resolved_at = models.DateTimeField(null=True, blank=True) 
 	
 	def __str__(self):
 		return self.name;

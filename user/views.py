@@ -340,6 +340,8 @@ def resolve_ticket(request, ticket_id):
             ticket.resolve_reason = full_reason
 
         ticket.status = 'Resolved'
+        ticket.resolved_at = timezone.now()
+
         ticket.save()
 
         management_emails = list(Users.objects.values_list('UserName', flat=True))
