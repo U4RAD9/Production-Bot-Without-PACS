@@ -1,11 +1,11 @@
 import requests
 from django.conf import settings
 
-
-def send_whatsapp_ticket(mobile_number, ticket_subject, overridebot="yes"):
+def send_whatsapp_ticket(mobile_number, overridebot="yes"):
     """
     Sends WhatsApp ticket assignment message using Cunnekt API
     mobile_number format: 91XXXXXXXXXX
+    Template is STATIC (no variables)
     """
 
     if not settings.WHATSAPP_API_URL:
@@ -14,25 +14,13 @@ def send_whatsapp_ticket(mobile_number, ticket_subject, overridebot="yes"):
     payload = {
         "templateid": settings.WHATSAPP_TEMPLATE_ID,
         "mobile": mobile_number,
-        "overridebot": overridebot,
-        "template": {
-            "components": [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {
-                            "type": "text",
-                            "text": ticket_subject
-                        }
-                    ]
-                }
-            ]
-        }
+        "overridebot": overridebot
+        # ❌ No template/components because template has no variables
     }
 
     headers = {
         "Content-Type": "application/json",
-        "API-KEY": settings.WHATSAPP_API_TOKEN   # ✅ MUST BE EXACT
+        "API-KEY": settings.WHATSAPP_API_TOKEN   # ✅ Must be exact
     }
 
     try:
@@ -48,7 +36,7 @@ def send_whatsapp_ticket(mobile_number, ticket_subject, overridebot="yes"):
 
         res_json = response.json()
 
-        # Cunnekt success is based on JSON `status`, not HTTP 200
+        # Success is determined by JSON "status", not HTTP 200
         return res_json.get("status", False), res_json
 
     except Exception as e:
