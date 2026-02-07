@@ -378,8 +378,6 @@ from django.utils import timezone
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-
-from tickets.models import Tickets, TaskAssignment, UserProfile
 from Management.utils import send_whatsapp_ticket
 
 
