@@ -370,14 +370,13 @@ def comments(request,pk):
 #             return redirect('TaskManagement')
 
 #     return redirect('TaskManagement')  # Optional fallback
-from tickets.models import UserProfile
-from Management.utils import send_whatsapp_ticket
-
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
+
+from tickets.models import Tickets, TaskAssignment, UserProfile
 from Management.utils import send_whatsapp_ticket
 
 
@@ -391,7 +390,6 @@ def assign_task(request, ticket_id):
         return redirect('TaskManagement')
 
     form = TaskAssignForm(request.POST)
-
     if not form.is_valid():
         messages.error(request, "Invalid form submission")
         return redirect('TaskManagement')
@@ -431,14 +429,17 @@ def assign_task(request, ticket_id):
 
         if mobile:
             if not mobile.startswith("91"):
-                mobile = f"91{mobile}"
+                mobile = "91" + mobile
 
-            success, response = send_whatsapp_ticket(mobile)
+            success, response = send_whatsapp_ticket(
+                mobile_number=mobile,
+                ticket_subject=ticket.subject
+            )
 
             if success:
-                print("✅ WhatsApp sent:", response)
+                print("✅ WhatsApp DELIVERED")
             else:
-                print("❌ WhatsApp failed:", response)
+                print("❌ WhatsApp REJECTED:", response)
 
         else:
             print("⚠️ Mobile number missing")
@@ -493,10 +494,11 @@ Estimated Resolution Time: {due_minutes} minutes
 
     messages.success(
         request,
-        f"Task assigned to {assigned_to.username}. Email & WhatsApp sent."
+        f"Task assigned to {assigned_to.username}. Email sent. WhatsApp processed."
     )
 
     return redirect('TaskManagement')
+
 
 
 

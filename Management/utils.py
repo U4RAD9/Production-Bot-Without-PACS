@@ -2,39 +2,54 @@ import requests
 from django.conf import settings
 
 
-def send_whatsapp_ticket(mobile_number, overridebot="yes"):
+def send_whatsapp_ticket(mobile_number, ticket_subject, overridebot="yes"):
     """
-    Sends WhatsApp message using Cunnekt API
+    Sends WhatsApp ticket assignment message using Cunnekt API
     mobile_number format: 91XXXXXXXXXX
     """
 
     if not settings.WHATSAPP_API_URL:
-        return False, "WhatsApp API URL missing"
+        return False, {"error": "WhatsApp API URL missing"}
 
     payload = {
-        "mobile": mobile_number,
         "templateid": settings.WHATSAPP_TEMPLATE_ID,
-        "overridebot": overridebot
+        "mobile": mobile_number,
+        "overridebot": overridebot,
+        "template": {
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {
+                            "type": "text",
+                            "text": ticket_subject
+                        }
+                    ]
+                }
+            ]
+        }
     }
 
     headers = {
-        "Authorization": f"Bearer {settings.WHATSAPP_API_TOKEN}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "API-KEY": settings.WHATSAPP_API_TOKEN   # ✅ MUST BE EXACT
     }
 
     try:
         response = requests.post(
             settings.WHATSAPP_API_URL,
-            json=payload,
             headers=headers,
+            json=payload,
             timeout=10
         )
 
         print("📡 WhatsApp API Status:", response.status_code)
         print("📡 WhatsApp API Response:", response.text)
 
-        response.raise_for_status()
-        return True, response.json()
+        res_json = response.json()
 
-    except requests.exceptions.RequestException as e:
-        return False, str(e)
+        # Cunnekt success is based on JSON `status`, not HTTP 200
+        return res_json.get("status", False), res_json
+
+    except Exception as e:
+        return False, {"error": str(e)}
