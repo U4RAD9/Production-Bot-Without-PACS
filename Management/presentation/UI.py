@@ -287,6 +287,92 @@ def comments(request,pk):
     return render(request, "comments.html", {'form':form,'Content':Comments})
 
 
+# def assign_task(request, ticket_id):
+#     ticket = get_object_or_404(Tickets, id=ticket_id)
+
+#     if request.method == 'POST':
+#         form = TaskAssignForm(request.POST)
+#         if form.is_valid():
+#             assigned_to = form.cleaned_data['assigned_to']
+#             due_minutes = form.cleaned_data['due_minutes']
+
+#             try:
+#                 # Already assigned → Reassignment
+#                 assignment = ticket.taskassignment
+#                 assignment.assigned_to = assigned_to
+#                 assignment.due_minutes = due_minutes
+#                 assignment.reassigned_at = timezone.now()
+#                 assignment.save()
+#             except TaskAssignment.DoesNotExist:
+#                 # First-time assignment
+#                 TaskAssignment.objects.create(
+#                     ticket=ticket,
+#                     assigned_to=assigned_to,
+#                     due_minutes=due_minutes,
+#                     assigned_att=timezone.now()  # ✅ Correct name here
+#                 )
+
+#             ticket.status = "Pending"
+#             ticket.save()
+
+#             # Build URLs for email
+#             ticket_link = request.build_absolute_uri(f"/Management/tickets/{ticket.id}/")
+#             login_url = request.build_absolute_uri(f"/Management/user/login/")
+
+#             # Admin emails (assuming Users is a custom model)
+#             management_emails = list(Users.objects.values_list('UserName', flat=True))
+
+#             # Email to assigned technician
+#             send_mail(
+#                 subject=f"You have been assigned Ticket #{ticket.id}",
+#                 message=f"""
+# Hi {assigned_to.get_full_name() or assigned_to.username},
+
+# You have been assigned a new ticket:
+
+# ━━━━━━━━━━━━━━━━━━━
+# Subject: {ticket.subject}
+# Description: {ticket.description}
+# Due In: {due_minutes} minutes
+# ━━━━━━━━━━━━━━━━━━━
+
+# Please check the system to take necessary action.
+# Link: {login_url}
+
+# - HelpDesk Admin
+# """,
+#                 from_email=settings.DEFAULT_FROM_EMAIL,
+#                 recipient_list=[assigned_to.email],
+#                 fail_silently=False
+#             )
+
+#             # Email to original user
+#             send_mail(
+#                 subject=f"Update on your Ticket #{ticket.id}",
+#                 message=f"""
+# Hi {ticket.user}, your issue has been assigned to {assigned_to}.
+
+# ━━━━━━━━━━━━━━━━━━━
+# Subject: {ticket.subject}
+# Description: {ticket.description}
+# Estimated Resolving Time: {due_minutes} minutes
+# ━━━━━━━━━━━━━━━━━━━
+
+# - HelpDesk Admin
+# Created by Gautam
+# """,
+#                 from_email=settings.DEFAULT_FROM_EMAIL,
+#                 recipient_list=[ticket.user.email],
+#                 fail_silently=False
+#             )
+
+#             messages.success(request, f"Task assigned to {assigned_to.username} and emails sent.")
+#             return redirect('TaskManagement')
+
+#     return redirect('TaskManagement')  # Optional fallback
+from tickets.models import UserProfile
+from Management.utils import send_whatsapp_ticket
+
 def assign_task(request, ticket_id):
     ticket = get_object_or_404(Tickets, id=ticket_id)
 
@@ -297,32 +383,49 @@ def assign_task(request, ticket_id):
             due_minutes = form.cleaned_data['due_minutes']
 
             try:
-                # Already assigned → Reassignment
                 assignment = ticket.taskassignment
                 assignment.assigned_to = assigned_to
                 assignment.due_minutes = due_minutes
                 assignment.reassigned_at = timezone.now()
                 assignment.save()
             except TaskAssignment.DoesNotExist:
-                # First-time assignment
                 TaskAssignment.objects.create(
                     ticket=ticket,
                     assigned_to=assigned_to,
                     due_minutes=due_minutes,
-                    assigned_att=timezone.now()  # ✅ Correct name here
+                    assigned_att=timezone.now()
                 )
 
             ticket.status = "Pending"
             ticket.save()
 
-            # Build URLs for email
+            # ==============================
+            # 📲 WHATSAPP NOTIFICATION
+            # ==============================
+            try:
+                profile = UserProfile.objects.get(user=assigned_to)
+
+                if profile.mobile_number:
+                    success, response = send_whatsapp_ticket(
+                        mobile_number=profile.mobile_number
+                    )
+
+                    if not success:
+                        print("WhatsApp failed:", response)
+
+            except UserProfile.DoesNotExist:
+                print("No UserProfile for assigned user")
+
+            # ==============================
+            # ✉️ EMAILS (Your Existing Code)
+            # ==============================
             ticket_link = request.build_absolute_uri(f"/Management/tickets/{ticket.id}/")
             login_url = request.build_absolute_uri(f"/Management/user/login/")
 
-            # Admin emails (assuming Users is a custom model)
-            management_emails = list(Users.objects.values_list('UserName', flat=True))
+            management_emails = list(
+                Users.objects.values_list('UserName', flat=True)
+            )
 
-            # Email to assigned technician
             send_mail(
                 subject=f"You have been assigned Ticket #{ticket.id}",
                 message=f"""
@@ -346,7 +449,6 @@ Link: {login_url}
                 fail_silently=False
             )
 
-            # Email to original user
             send_mail(
                 subject=f"Update on your Ticket #{ticket.id}",
                 message=f"""
@@ -366,10 +468,13 @@ Created by Gautam
                 fail_silently=False
             )
 
-            messages.success(request, f"Task assigned to {assigned_to.username} and emails sent.")
+            messages.success(
+                request,
+                f"Task assigned to {assigned_to.username}, email & WhatsApp sent."
+            )
             return redirect('TaskManagement')
 
-    return redirect('TaskManagement')  # Optional fallback
+    return redirect('TaskManagement')
 
 
 from django.views.decorators.http import require_POST

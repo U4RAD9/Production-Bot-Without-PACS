@@ -34,6 +34,7 @@ import datetime
 from datetime import timedelta
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
+from Management.utils import send_whatsapp_ticket
 
 # @login_required
 # def render_pdf(request):
@@ -632,6 +633,26 @@ def create_ticket(request):
             new_ticket.user = request.user
             new_ticket.save()
 
+			# ---------------- WHATSAPP NOTIFICATION ----------------
+            try:
+                user = request.user
+            
+                # ⚠️ Change ONLY if your mobile field name is different
+                mobile = user.profile.mobile  
+            
+                if mobile:
+                    if not mobile.startswith("91"):
+                        mobile = "91" + mobile
+            
+                    success, response = send_whatsapp_ticket(
+                        mobile_number=mobile,
+                        overridebot="yes"
+                    )
+            
+                    print("WhatsApp sent:", success, response)
+            
+            except Exception as e:
+                print("WhatsApp error:", e)
             # supervisor = User.objects.filter(is_superuser=True).first()
             management_emails = list(Users.objects.values_list('UserName', flat=True))
             # print("Supervisor:", supervisor)
