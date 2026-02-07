@@ -373,108 +373,133 @@ def comments(request,pk):
 from tickets.models import UserProfile
 from Management.utils import send_whatsapp_ticket
 
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
+
+from tickets.models import Tickets, TaskAssignment, UserProfile
+from Management.utils import send_whatsapp_ticket
+
+
 def assign_task(request, ticket_id):
+    print("✅ assign_task view hit:", request.method)
+
     ticket = get_object_or_404(Tickets, id=ticket_id)
 
-    if request.method == 'POST':
-        form = TaskAssignForm(request.POST)
-        if form.is_valid():
-            assigned_to = form.cleaned_data['assigned_to']
-            due_minutes = form.cleaned_data['due_minutes']
+    if request.method != "POST":
+        messages.error(request, "Invalid request method")
+        return redirect('TaskManagement')
 
-            try:
-                assignment = ticket.taskassignment
-                assignment.assigned_to = assigned_to
-                assignment.due_minutes = due_minutes
-                assignment.reassigned_at = timezone.now()
-                assignment.save()
-            except TaskAssignment.DoesNotExist:
-                TaskAssignment.objects.create(
-                    ticket=ticket,
-                    assigned_to=assigned_to,
-                    due_minutes=due_minutes,
-                    assigned_att=timezone.now()
-                )
+    form = TaskAssignForm(request.POST)
 
-            ticket.status = "Pending"
-            ticket.save()
+    if not form.is_valid():
+        messages.error(request, "Invalid form submission")
+        return redirect('TaskManagement')
 
-            # ==============================
-            # 📲 WHATSAPP NOTIFICATION
-            # ==============================
-            try:
-                profile = UserProfile.objects.get(user=assigned_to)
+    assigned_to = form.cleaned_data['assigned_to']
+    due_minutes = form.cleaned_data['due_minutes']
 
-                if profile.mobile_number:
-                    success, response = send_whatsapp_ticket(
-                        mobile_number=profile.mobile_number
-                    )
+    # -------------------------------
+    # TASK ASSIGNMENT
+    # -------------------------------
+    assignment, created = TaskAssignment.objects.get_or_create(
+        ticket=ticket,
+        defaults={
+            "assigned_to": assigned_to,
+            "due_minutes": due_minutes,
+            "assigned_at": timezone.now()
+        }
+    )
 
-                    if not success:
-                        print("WhatsApp failed:", response)
+    if not created:
+        assignment.assigned_to = assigned_to
+        assignment.due_minutes = due_minutes
+        assignment.reassigned_at = timezone.now()
+        assignment.save()
 
-            except UserProfile.DoesNotExist:
-                print("No UserProfile for assigned user")
+    ticket.status = "Pending"
+    ticket.save()
 
-            # ==============================
-            # ✉️ EMAILS (Your Existing Code)
-            # ==============================
-            ticket_link = request.build_absolute_uri(f"/Management/tickets/{ticket.id}/")
-            login_url = request.build_absolute_uri(f"/Management/user/login/")
+    # -------------------------------
+    # 📲 WHATSAPP NOTIFICATION
+    # -------------------------------
+    try:
+        profile = UserProfile.objects.get(user=assigned_to)
+        mobile = profile.mobile_number
 
-            management_emails = list(
-                Users.objects.values_list('UserName', flat=True)
-            )
+        print("📱 Mobile from profile:", mobile)
 
-            send_mail(
-                subject=f"You have been assigned Ticket #{ticket.id}",
-                message=f"""
+        if mobile:
+            if not mobile.startswith("91"):
+                mobile = f"91{mobile}"
+
+            success, response = send_whatsapp_ticket(mobile)
+
+            if success:
+                print("✅ WhatsApp sent:", response)
+            else:
+                print("❌ WhatsApp failed:", response)
+
+        else:
+            print("⚠️ Mobile number missing")
+
+    except UserProfile.DoesNotExist:
+        print("❌ UserProfile not found")
+
+    except Exception as e:
+        print("🔥 WhatsApp exception:", str(e))
+
+    # -------------------------------
+    # ✉️ EMAIL NOTIFICATIONS
+    # -------------------------------
+    login_url = request.build_absolute_uri("/Management/user/login/")
+
+    send_mail(
+        subject=f"You have been assigned Ticket #{ticket.id}",
+        message=f"""
 Hi {assigned_to.get_full_name() or assigned_to.username},
 
-You have been assigned a new ticket:
+You have been assigned a new ticket.
 
-━━━━━━━━━━━━━━━━━━━
 Subject: {ticket.subject}
 Description: {ticket.description}
 Due In: {due_minutes} minutes
-━━━━━━━━━━━━━━━━━━━
 
-Please check the system to take necessary action.
-Link: {login_url}
+Login: {login_url}
 
 - HelpDesk Admin
 """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[assigned_to.email],
-                fail_silently=False
-            )
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[assigned_to.email],
+        fail_silently=False
+    )
 
-            send_mail(
-                subject=f"Update on your Ticket #{ticket.id}",
-                message=f"""
-Hi {ticket.user}, your issue has been assigned to {assigned_to}.
+    send_mail(
+        subject=f"Update on your Ticket #{ticket.id}",
+        message=f"""
+Hi {ticket.user},
 
-━━━━━━━━━━━━━━━━━━━
+Your ticket has been assigned to {assigned_to.username}.
+
 Subject: {ticket.subject}
-Description: {ticket.description}
-Estimated Resolving Time: {due_minutes} minutes
-━━━━━━━━━━━━━━━━━━━
+Estimated Resolution Time: {due_minutes} minutes
 
-- HelpDesk Admin
-Created by Gautam
+- HelpDesk Team
 """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[ticket.user.email],
-                fail_silently=False
-            )
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[ticket.user.email],
+        fail_silently=False
+    )
 
-            messages.success(
-                request,
-                f"Task assigned to {assigned_to.username}, email & WhatsApp sent."
-            )
-            return redirect('TaskManagement')
+    messages.success(
+        request,
+        f"Task assigned to {assigned_to.username}. Email & WhatsApp sent."
+    )
 
     return redirect('TaskManagement')
+
 
 
 from django.views.decorators.http import require_POST
