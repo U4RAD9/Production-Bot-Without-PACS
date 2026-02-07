@@ -433,7 +433,6 @@ def assign_task(request, ticket_id):
 
             success, response = send_whatsapp_ticket(
                 mobile_number=mobile,
-                ticket_subject=ticket.subject
             )
 
             if success:
