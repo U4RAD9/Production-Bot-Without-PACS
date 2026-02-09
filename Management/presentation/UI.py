@@ -405,7 +405,7 @@ def assign_task(request, ticket_id):
         defaults={
             "assigned_to": assigned_to,
             "due_minutes": due_minutes,
-            "assigned_at": timezone.now()
+            # "assigned_at": timezone.now()
         }
     )
 
